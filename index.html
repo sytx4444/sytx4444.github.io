@@ -14,9 +14,8 @@
             font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
             overflow: hidden;
             color: #fff;
-            background: #1a1a2e; /* 图片加载前或失败时的底色 */
+            background: #1a1a2e;
         }
-        /* 👇 核心修改：用 img 标签做背景 */
         .bg-img {
             position: fixed;
             top: 0; left: 0;
@@ -24,19 +23,17 @@
             object-fit: cover;
             z-index: 0;
         }
-        /* 图片加载失败时的占位提示 */
         .image-placeholder {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-            display: none; /* 默认隐藏，onerror 时显示 */
+            display: none;
             justify-content: center;
             align-items: center;
             font-size: 1.5em;
             opacity: 0.8;
             z-index: 0;
         }
-        /* 半透明遮罩，保证文字清晰 */
         .overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -58,7 +55,7 @@
             margin: 20px;
         }
         .cake { font-size: 80px; margin-bottom: 20px; animation: bounce 1s ease infinite; }
-        h1 { font-size: 2.5em; margin-bottom: 15px; background: linear-gradient(90deg, #f9d423, #ff4e50); -webkit-background-clip: text; background-clip: text;  -webkit-text-fill-color: transparent; }
+        h1 { font-size: 2.5em; margin-bottom: 15px; background: linear-gradient(90deg, #f9d423, #ff4e50); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
         p { font-size: 1.2em; line-height: 1.8; opacity: 0.95; margin-bottom: 25px; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         .btn {
             display: inline-block;
@@ -74,22 +71,68 @@
         }
         .btn:hover { transform: scale(1.08); box-shadow: 0 8px 30px rgba(255,78,80,0.6); }
         .confetti { position: fixed; top: -10px; width: 10px; height: 10px; border-radius: 50%; animation: fall linear forwards; pointer-events: none; z-index: 10; }
+        
+        /* 👇 新增：弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 40px 50px;
+            border-radius: 20px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+            max-width: 80%;
+        }
+        .modal-overlay.active .modal-box {
+            transform: scale(1);
+        }
+        .modal-text {
+            font-size: 1.5em;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .modal-close-btn {
+            padding: 10px 30px;
+            background: #fff;
+            border: none;
+            border-radius: 50px;
+            color: #1a1a2e;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .modal-close-btn:hover { transform: scale(1.05); }
+
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
         @keyframes bounce { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
         @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
     </style>
 </head>
 <body>
-    <!-- 👇 背景图用 img 标签，带 onerror 容错 -->
-    <img class="bg-img" 
+     <img class="bg-img" 
          src="./pic/background.jpg" 
          alt="晚晚" 
          onerror="this.style.display='none'; this.parentNode.querySelector('.image-placeholder').style.display='flex';">
-    
-    <!-- 图片加载失败时的占位 -->
     <div class="image-placeholder">🎂 图片走丢啦，但祝福不会！</div>
-    
-    <!-- 遮罩层 -->
     <div class="overlay"></div>
 
     <div class="card">
@@ -100,10 +143,20 @@
             新的一岁，身体健康，万事如意 🎉<br>
             直播越做越好，长长久久🎈
         </p>
-        <button class="btn" onclick="launchConfetti()">🎁 点我领祝福</button>
+        <!-- 👇 修改了按钮的点击事件 -->
+        <button class="btn" onclick="showBlessing()">🎁 点我领祝福</button>
+    </div>
+
+    <!-- 👇 新增：祝福弹窗结构 -->
+    <div class="modal-overlay" id="blessingModal">
+        <div class="modal-box">
+            <div class="modal-text">🎉口令“晚晚0609” 🎉</div>
+            <button class="modal-close-btn" onclick="closeBlessing()">收到</button>
+        </div>
     </div>
 
     <script>
+        // 撒彩纸函数
         function launchConfetti() {
             const colors = ['#f9d423','#ff4e50','#43e97b','#38f9d7','#fa709a','#fee140'];
             for (let i = 0; i < 60; i++) {
@@ -117,6 +170,19 @@
                 setTimeout(() => c.remove(), 4000);
             }
         }
+
+        // 👇 新增：显示祝福弹窗
+        function showBlessing() {
+            launchConfetti(); // 点按钮时同时撒彩纸
+            document.getElementById('blessingModal').classList.add('active');
+        }
+
+        // 👇 新增：关闭祝福弹窗
+        function closeBlessing() {
+            document.getElementById('blessingModal').classList.remove('active');
+        }
+
+        // 页面加载后自动撒一波彩纸
         setTimeout(launchConfetti, 800);
     </script>
 </body>
